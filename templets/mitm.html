@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MITM Attack Scenario Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --user-blue: #3b82f6;
+            --attacker-orange: #f97316;
+            --server-green: #22c55e;
+            --danger: #ef4444;
+        }
+
+        body { background: var(--bg); color: #f8fafc; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+
+        .navbar {
+            background: rgba(30, 41, 59, 0.95);
+            padding: 15px 30px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h1 {
+            color: #3b82f6;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .nav-back {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .nav-back:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .page-content { padding: 20px; }
+        .container { max-width: 1100px; margin: auto; padding: 20px; }
+        
+        /* The Connection Map */
+        .network-map {
+            background: #ffffff10; border-radius: 15px; padding: 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: relative; margin-bottom: 20px; border: 1px dashed #475569;
+        }
+
+        .node { text-align: center; z-index: 2; width: 120px; }
+        .icon { font-size: 3rem; margin-bottom: 10px; }
+        
+        /* The Moving Packet */
+        .packet {
+            width: 20px; height: 20px; background: #fbbf24; border-radius: 4px;
+            position: absolute; top: 50%; left: 10%; display: none;
+            box-shadow: 0 0 10px #fbbf24;
+        }
+
+        .attacker-node { color: var(--attacker-orange); visibility: hidden; }
+        .intercepted { visibility: visible !important; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* Dashboard Styles */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; }
+        .log-box { background: #000; color: #fbbf24; padding: 15px; height: 150px; overflow-y: auto; border-radius: 8px; font-family: monospace; font-size: 0.85rem; }
+        
+        .data-display { background: #111; padding: 10px; border-radius: 5px; font-family: monospace; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>⚔️ CyberScope</h1>
+    <a href="/hub" class="nav-back">← Back to Hub</a>
+</div>
+
+<div class="page-content">
+
+<div class="container">
+    <header style="text-align: center; margin-bottom: 30px;">
+        <h1>Scenario: Man-in-the-Middle (MITM)</h1>
+        <p>Visualizing data interception and unauthorized modification (Packet Sniffing)</p>
+    </header>
+
+    <div class="network-map">
+        <div class="node" style="color:var(--user-blue)">
+            <div class="icon">💻</div>
+            <strong>User</strong>
+        </div>
+
+        <div id="attacker-box" class="node attacker-node">
+            <div class="icon">🕵️</div>
+            <strong>Attacker</strong>
+            <div id="intercept-status" style="font-size: 0.7rem;">(Interception Active)</div>
+        </div>
+
+        <div class="node" style="color:var(--server-green)">
+            <div class="icon">☁️</div>
+            <strong>Bank Server</strong>
+        </div>
+
+        <div id="data-packet" class="packet"></div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Transaction Control</h3>
+            <p>The user attempts to send $100 to "Friend".</p>
+            <button onclick="sendPacket(false)" style="width:100%; padding:12px; background:var(--user-blue); border:none; color:white; border-radius:6px; cursor:pointer; font-weight:bold;">
+                SEND SECURE DATA
+            </button>
+            <button onclick="toggleMITM()" style="width:100%; padding:12px; background:var(--attacker-orange); border:none; color:white; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:10px;">
+                START ARP SPOOFING (MITM)
+            </button>
+            
+            <div class="data-display">
+                <strong>Packet Content:</strong> <span id="packet-raw">{"amount": 100, "to": "Friend"}</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Attacker's Console</h3>
+            <div id="logs" class="log-box">[SYSTEM] Monitoring LAN for packets...</div>
+            <div id="captured-data" style="margin-top:10px; padding:10px; background:#222; border-radius:5px; color:var(--attacker-orange); display:none;">
+                <strong>INTERCEPTED:</strong> <span id="captured-val"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const packet = document.getElementById('data-packet');
+    const attackerBox = document.getElementById('attacker-box');
+    const logs = document.getElementById('logs');
+    const rawDisplay = document.getElementById('packet-raw');
+    let isMITM = false;
+
+    function addLog(msg, color = "#fbbf24") {
+        logs.innerHTML += `<div style="color:${color}">[${new Date().toLocaleTimeString().split(' ')[0]}] ${msg}</div>`;
+        logs.scrollTop = logs.scrollHeight;
+    }
+
+    function toggleMITM() {
+        isMITM = !isMITM;
+        attackerBox.className = isMITM ? "node attacker-node intercepted" : "node attacker-node";
+        addLog(isMITM ? "ATTACKER: ARP Spoofing successful. Traffic routed through host." : "ATTACKER: MITM stopped.", isMITM ? "var(--attacker-orange)" : "var(--success)");
+    }
+
+    async function sendPacket() {
+        packet.style.display = "block";
+        packet.style.left = "10%";
+        rawDisplay.innerText = '{"amount": 100, "to": "Friend"}';
+        addLog("USER: Initiating transfer of $100...");
+
+        if (isMITM) {
+            // Move to Attacker first
+            await movePacket(50);
+            addLog("ATTACKER: Packet Intercepted!", "var(--danger)");
+            document.getElementById('captured-data').style.display = "block";
+            document.getElementById('captured-val').innerText = '{"amount": 100, "to": "Friend"}';
+            
+            await new Promise(r => setTimeout(r, 1000));
+            
+            // Modify Data
+            addLog("ATTACKER: Modifying packet data...", "var(--danger)");
+            rawDisplay.innerText = '{"amount": 5000, "to": "Attacker"}';
+            document.getElementById('captured-val').innerText = '{"amount": 5000, "to": "Attacker"}';
+            
+            // Move to Server
+            await movePacket(90);
+            addLog("SERVER: Received Request. Processing $5000 transfer to Attacker.", "var(--danger)");
+        } else {
+            // Move directly to Server
+            await movePacket(90);
+            addLog("SERVER: Received Request. Processing $100 transfer to Friend.", "var(--success)");
+        }
+        
+        setTimeout(() => { packet.style.display = "none"; }, 500);
+    }
+
+    function movePacket(targetPercent) {
+        return new Promise(resolve => {
+            let pos = parseInt(packet.style.left);
+            let interval = setInterval(() => {
+                if (pos >= targetPercent) {
+                    clearInterval(interval);
+                    resolve();
+                } else {
+                    pos++;
+                    packet.style.left = pos + "%";
+                }
+            }, 20);
+        });
+    }
+</script>
+</body>
+</html>

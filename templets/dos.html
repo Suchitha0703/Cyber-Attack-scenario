@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DoS Attack Scenario Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+
+        .navbar {
+            background: rgba(30, 41, 59, 0.95);
+            padding: 15px 30px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h1 {
+            color: #3b82f6;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .nav-back {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .nav-back:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .page-content { padding: 20px; }
+        .container { max-width: 1100px; margin: auto; display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; padding: 20px; }
+        
+        /* The Simulated Server Rack */
+        .server-mockup {
+            background: #334155; border-radius: 12px; padding: 30px; text-align: center;
+            border: 4px solid #475569; position: relative;
+        }
+        .server-light { 
+            width: 15px; height: 15px; border-radius: 50%; background: var(--success); 
+            display: inline-block; margin: 5px; box-shadow: 0 0 10px var(--success);
+        }
+        .server-overload { background: var(--danger) !important; box-shadow: 0 0 15px var(--danger) !important; }
+
+        .resource-bar { width: 100%; background: #1e293b; height: 25px; border-radius: 12px; margin: 10px 0; overflow: hidden; }
+        .resource-fill { height: 100%; background: var(--success); width: 10%; transition: width 0.3s; }
+
+        /* Dashboard Styles */
+        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; }
+        .log-box { background: #000; color: #fbbf24; padding: 15px; height: 150px; overflow-y: auto; border-radius: 8px; font-family: monospace; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>⚔️ CyberScope</h1>
+    <a href="/hub" class="nav-back">← Back to Hub</a>
+</div>
+
+<div class="page-content">
+<div class="container">
+    <header style="grid-column: 1 / span 2; text-align: center;">
+        <h1>Scenario: Denial of Service (DoS)</h1>
+        <p>Visualizing resource exhaustion and service unavailability.</p>
+    </header>
+
+    <div class="server-mockup" id="server-rack">
+        <h3>Web Server Cluster</h3>
+        <div id="lights">
+            <span class="server-light"></span><span class="server-light"></span><span class="server-light"></span>
+        </div>
+        <div style="margin-top:20px; text-align: left;">
+            <label>CPU Usage:</label>
+            <div class="resource-bar"><div id="cpu-fill" class="resource-fill"></div></div>
+            <label>Memory Usage:</label>
+            <div class="resource-bar"><div id="mem-fill" class="resource-fill"></div></div>
+        </div>
+        <h2 id="server-status" style="color:var(--success); margin-top:20px;">ONLINE</h2>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h3>🚀 Attack Controls</h3>
+            <button onclick="startDoS()" style="width:100%; padding:15px; background:var(--danger); border:none; color:white; border-radius:8px; font-weight:bold; cursor:pointer; font-size: 1rem;">
+                LAUNCH SYN FLOOD ATTACK
+            </button>
+            <button onclick="activateRateLimit()" style="width:100%; padding:15px; background:var(--success); border:none; color:white; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:10px; font-size: 1rem;">
+                ACTIVATE RATE LIMITING
+            </button>
+        </div>
+
+        <div class="card" style="height: 250px;">
+            <h3 style="margin-top: 0;">Network Traffic Analysis</h3>
+            <canvas id="dosChart"></canvas>
+        </div>
+
+        <div id="logs" class="log-box">[SYSTEM] Resources stable. Incoming traffic: 12 req/sec.</div>
+    </div>
+</div>
+</div>
+
+<script>
+    const cpuFill = document.getElementById('cpu-fill');
+    const memFill = document.getElementById('mem-fill');
+    const statusText = document.getElementById('server-status');
+    const logBox = document.getElementById('logs');
+    let attackInterval;
+    let isAdoAttacking = false;
+
+    const ctx = document.getElementById('dosChart').getContext('2d');
+    let dosChart = new Chart(ctx, {
+        type: 'line',
+        data: { 
+            labels: Array(20).fill(''), 
+            datasets: [{ 
+                label: 'Incoming Requests/sec', 
+                data: Array(20).fill(20), 
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                fill: true,
+                tension: 0.4
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { y: { max: 1000, beginAtZero: true } } 
+        }
+    });
+
+    function addLog(msg, color = "#fbbf24") {
+        const time = new Date().toLocaleTimeString();
+        logBox.innerHTML += `<div style="color:${color}">[${time}] ${msg}</div>`;
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function activateRateLimit() {
+        if (!isAdoAttacking) return;
+        isAdoAttacking = false;
+        clearInterval(attackInterval);
+        
+        cpuFill.style.width = "20%";
+        memFill.style.width = "15%";
+        cpuFill.style.background = "var(--success)";
+        statusText.innerText = "🟢 ONLINE (PROTECTED)";
+        statusText.style.color = "var(--success)";
+        addLog("✅ MITIGATION: Rate limiting enabled. Blocking 98% of packets.", "#22c55e");
+        
+        dosChart.data.datasets[0].data = Array(20).fill(15);
+        dosChart.data.datasets[0].borderColor = "#22c55e";
+        dosChart.update();
+    }
+
+    async function startDoS() {
+        if (isAdoAttacking) return;
+        isAdoAttacking = true;
+        
+        try {
+            addLog("⚠️ ATTACKER: Initiating SYN Flood from botnet...", "#ef4444");
+            dosChart.data.datasets[0].borderColor = "#ef4444";
+            
+            const response = await fetch('/api/dos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ duration: 8 })
+            });
+            
+            const result = await response.json();
+            let load = 0;
+            let step = 0;
+
+            attackInterval = setInterval(() => {
+                if (step >= result.data.length || !isAdoAttacking) {
+                    clearInterval(attackInterval);
+                    return;
+                }
+
+                load += 12;
+                if (load > 95) load = 95;
+
+                cpuFill.style.width = load + "%";
+                memFill.style.width = (load * 0.8) + "%";
+                
+                const dataPoint = result.data[step];
+                dosChart.data.datasets[0].data.shift();
+                dosChart.data.datasets[0].data.push(dataPoint.requests);
+                dosChart.update();
+
+                if (load > 50) {
+                    cpuFill.style.background = "#ef4444";
+                    statusText.innerText = "🟡 WARNING: HIGH LOAD";
+                    statusText.style.color = "#fbbf24";
+                    addLog(`Packet surge: ${dataPoint.requests} req/sec`, "#fbbf24");
+                }
+                if (load >= 90) {
+                    statusText.innerText = "🔴 CRITICAL: SERVER OVERLOADED (503)";
+                    statusText.style.color = "var(--danger)";
+                    document.querySelectorAll('.server-light').forEach(l => l.classList.add('server-overload'));
+                    addLog("CRITICAL: Server unresponsive. Packet loss increasing.", "#ef4444");
+                }
+                
+                step++;
+            }, 400);
+
+        } catch (error) {
+            addLog(`Error: ${error.message}`, "#ef4444");
+            isAdoAttacking = false;
+        }
+    }
+</script>
+</body>
+</html>

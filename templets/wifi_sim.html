@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Evil Twin Lab | CyberScope</title>
+    <style>
+        :root {
+            --bg: #10131a;
+            --card: #23272f;
+            --accent: #3b82f6;
+            --terminal: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(24, 28, 35, 0.95);
+            padding: 15px 30px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h1 {
+            color: var(--accent);
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .nav-back {
+            color: var(--text-dim);
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .nav-back:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .page-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        #os-ui {
+            background: var(--card);
+            color: var(--text-main);
+            width: 350px;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .wifi-list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            margin: 5px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: var(--bg);
+            color: var(--text-main);
+        }
+        .wifi-list-item:hover {
+            background: #181c23;
+            border-color: var(--accent);
+        }
+        .secure-icon { font-size: 0.8rem; color: var(--text-dim); }
+        .open-tag { color: var(--danger); font-size: 0.7rem; font-weight: bold; }
+        #captive-portal {
+            display: none;
+            background: var(--card);
+            color: var(--text-main);
+            width: 450px;
+            padding: 40px;
+            border-radius: 4px;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #23272f; background: var(--bg); color: var(--text-main); }
+        .btn { width: 100%; background: var(--accent); color: white; border: none; padding: 15px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        #sniffer {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%; height: 180px;
+            background: #181c23;
+            border-top: 3px solid var(--terminal);
+            color: var(--terminal); font-family: monospace;
+            padding: 15px; display: none; overflow-y: hidden;
+        }
+    </style>
+
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>⚔️ CyberScope</h1>
+    <a href="/hub" class="nav-back">← Back to Hub</a>
+</div>
+
+<div class="page-content">
+
+    <div id="os-ui">
+        <h4 style="margin: 0 0 15px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">Available Networks</h4>
+        <div class="wifi-list-item">
+            <span>Starbucks_Encrypted</span>
+            <span class="secure-icon">🔒</span>
+        </div>
+        <div class="wifi-list-item" onclick="showPortal()">
+            <span><strong>FREE_AIRPORT_WIFI</strong></span>
+            <span class="open-tag">UNSECURED</span>
+        </div>
+        <div class="wifi-list-item">
+            <span>Staff_Private_5G</span>
+            <span class="secure-icon">🔒</span>
+        </div>
+    </div>
+
+    <div id="captive-portal">
+        <h2 style="color:var(--accent)">Connection Required</h2>
+        <p>You must authenticate to access the <b>Airport Free Network</b>.</p>
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label>Corporate Email / Username</label>
+            <input type="text" id="email" placeholder="e.g., j.doe@company.com">
+            <label>Network Password</label>
+            <input type="password" id="pass" placeholder="••••••••">
+        </div>
+        <button class="btn" onclick="triggerHack()">Login & Connect</button>
+    </div>
+
+    <div id="sniffer">
+        <div style="color:white">[ATTACKER CONSOLE: Man-in-the-Middle active]</div>
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        function showPortal() {
+            document.getElementById('os-ui').style.display = 'none';
+            document.getElementById('captive-portal').style.display = 'block';
+        }
+
+        async function triggerHack() {
+            const email = document.getElementById('email').value || "anonymous@victim.com";
+            const pass = document.getElementById('pass').value || "123456";
+            
+            document.getElementById('sniffer').style.display = 'block';
+            const logs = [
+                "Intercepting raw frame from client...",
+                "Bypassing HSTS (SSL Stripping)...",
+                "Reading POST data from /captive/login.php",
+                `CREDENTIALS RECOVERED: user=${email}`,
+                `CREDENTIALS RECOVERED: pass=${pass}`,
+                "Session Cookie Hijacked: {auth_token: '9x82z...'}",
+                "Redirecting user to google.com to avoid suspicion..."
+            ];
+            let i = 0;
+            const logContainer = document.getElementById('logs');
+            // increment phishing-related stats
+            try {
+                const resp = await fetch('/api/phishing', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const info = await resp.json();
+                const extra = document.createElement('div');
+                extra.style.color = '#3b82f6';
+                extra.textContent = `API: phishing success=${info.success}`;
+                logContainer.appendChild(extra);
+
+                // also track wifi scenario separately
+                fetch('/api/wifi', { method: 'POST' }).catch(err => console.error('WiFi stats error', err));
+            } catch(e) {
+                console.error('WiFi/API error', e);
+            }
+            const itv = setInterval(() => {
+                const p = document.createElement('div');
+                p.textContent = "> " + logs[i];
+                if(logs[i].includes("RECOVERED")) p.style.color = "red";
+                logContainer.appendChild(p);
+                i++;
+                if(i >= logs.length) {
+                    clearInterval(itv);
+                    setTimeout(() => alert("CRITICAL ALERT: Your credentials were sent over an unencrypted network and intercepted!"), 1000);
+                }
+            }, 800);
+        }
+    </script>
+</body>
+</html>

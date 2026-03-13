@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Threat Directory | CyberScope</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --accent: #3b82f6;
+            --success: #22c55e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg) 0%, #1a2b4a 100%);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 15px 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #334155;
+        }
+
+        .navbar h1 {
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--accent), #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            border: 1px solid #334155;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border: 1px solid var(--accent);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent);
+            display: block;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .attack-card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #334155;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .attack-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .attack-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.2);
+        }
+
+        .attack-card:hover::before {
+            opacity: 1;
+        }
+
+        .attack-card h2 {
+            margin-top: 0;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3rem;
+        }
+
+        .attack-card p {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .launch-btn {
+            background: linear-gradient(135deg, var(--accent), #06b6d4);
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            text-align: center;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .launch-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .tag {
+            font-size: 0.7rem;
+            background: rgba(59, 130, 246, 0.3);
+            color: var(--accent);
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-bottom: 10px;
+            border: 1px solid var(--accent);
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h1>⚔️ CyberScope</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/hub">Simulations</a>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>🎯 Threat Simulation Directory</h1>
+        <p>Select a scenario to analyze attack vectors and mitigation strategies.</p>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-box">
+            <span class="stat-value" id="total-stats">0</span>
+            <span class="stat-label">Total Runs</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="bf-stats">0</span>
+            <span class="stat-label">Brute Force</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="xss-stats">0</span>
+            <span class="stat-label">XSS Tests</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="dos-stats">0</span>
+            <span class="stat-label">DoS Attacks</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="phish-stats">0</span>
+            <span class="stat-label">Phishing</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="malware-stats">0</span>
+            <span class="stat-label">Malware</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="mitm-stats">0</span>
+            <span class="stat-label">MITM</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="wifi-stats">0</span>
+            <span class="stat-label">Wi‑Fi</span>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="attack-card">
+            <div>
+                <span class="tag">Authentication</span>
+                <h2>🔑 Brute Force</h2>
+                <p>Simulate dictionary attacks against login forms and analyze how account lockout policies mitigate risks.</p>
+            </div>
+            <a href="/bruteforce" class="launch-btn">Launch Simulation →</a>
+        </div>
+
+        <div class="attack-card">
+            <div>
+                <span class="tag">Availability</span>
+                <h2>🌊 Denial of Service</h2>
+                <p>Monitor server resource exhaustion during a SYN Flood and test the effectiveness of rate limiting.</p>
+            </div>
+            <a href="/dos" class="launch-btn">Launch Simulation →</a>
+        </div>
+
+        <div class="attack-card">
+            <div>
+                <span class="tag">Integrity</span>
+                <h2>🕵️ Man-in-the-Middle</h2>
+                <p>Visualize ARP spoofing and packet interception to see how unencrypted data is modified in transit.</p>
+            </div>
+            <a href="/mitm" class="launch-btn">Launch Simulation →</a>
+        </div>
+
+        <div class="attack-card">
+            <div>
+                <span class="tag">Confidentiality</span>
+                <h2>🎣 Phishing Lab</h2>
+                <p>Explore credential harvesting techniques through social engineering and malicious email links.</p>
+            </div>
+            <a href="/phishing" class="launch-btn">Launch Simulation →</a>
+        </div>
+
+        <div class="attack-card">
+            <div>
+                <span class="tag">Malware</span>
+                <h2>🔓 Ransomware</h2>
+                <p>Observe the "Actions on Objectives" phase where file systems are encrypted and held for ransom.</p>
+            </div>
+            <a href="/ransomware" class="launch-btn">Launch Simulation →</a>
+        </div>
+
+        <div class="attack-card">
+            <div>
+                <span class="tag">Injection</span>
+                <h2>💉 Cross-Site Scripting</h2>
+                <p>Test manual and automated XSS payloads to understand DOM injection and session hijacking.</p>
+            </div>
+            <a href="/xss" class="launch-btn">Launch Simulation →</a>
+        </div>
+        <div class="attack-card">
+            <div>
+                <span class="tag">AI Security</span>
+                <h2>🤖 Prompt Injection</h2>
+                <p>Simulate <b>Indirect Prompt Injection</b> where an AI assistant processes a poisoned document to leak secrets or bypass safety filters.</p>
+            </div>
+            <a href="/indirect" class="launch-btn">Launch Simulation →</a>
+        </div>
+        <div class="attack-card">
+            <div>
+                <span class="tag">Social Engineering</span>
+                <h2>💾 Malicious Download</h2>
+                <p>Simulate how disguised file extensions (spoofing) and "free tool" baiting can lead to a full system compromise via Trojan installers.</p>
+            </div>
+            <a href="/malware" class="launch-btn">Launch Simulation →</a>
+        </div>
+        <div class="attack-card">
+            <div>
+                <span class="tag">Network</span>
+                <h2>📶 Evil Twin AP</h2>
+                <p>Simulate a rogue Wi-Fi hotspot interception. Analyze how captive portals are used to harvest credentials and perform SSL stripping.</p>
+            </div>
+            <a href="/wifi_sim" class="launch-btn">Launch Simulation →</a>
+        </div>
+    </div>
+
+    <script>
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                document.getElementById('total-stats').textContent = data.total;
+                document.getElementById('bf-stats').textContent = data.stats.bruteforce;
+                document.getElementById('xss-stats').textContent = data.stats.xss;
+                document.getElementById('dos-stats').textContent = data.stats.dos;
+                document.getElementById('phish-stats').textContent = data.stats.phishing || 0;
+                document.getElementById('malware-stats').textContent = data.stats.malware || 0;
+                document.getElementById('mitm-stats').textContent = data.stats.mitm || 0;
+                document.getElementById('wifi-stats').textContent = data.stats.wifi || 0;
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Update stats on page load and every 3 seconds
+        updateStats();
+        setInterval(updateStats, 3000);
+    </script>
+
+</body>
+</html>

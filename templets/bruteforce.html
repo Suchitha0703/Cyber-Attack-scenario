@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Attack Visualizer - Dynamic Scenario</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --accent: #3b82f6;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #fbbf24;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0;
+        }
+
+        .navbar {
+            background: rgba(30, 41, 59, 0.95);
+            padding: 15px 30px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .navbar h1 {
+            color: #3b82f6;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .nav-back {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .nav-back:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .container { max-width: 1100px; margin: auto; padding: 20px; display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+
+        .container { max-width: 1100px; margin: auto; display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+        header { grid-column: 1 / span 2; text-align: center; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+
+        /* The Simulated Target Website */
+        .website-mockup {
+            background: #ffffff; border-radius: 12px; padding: 30px; color: #333;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center;
+        }
+
+        input {
+            width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd;
+            border-radius: 6px; box-sizing: border-box; font-size: 1rem;
+        }
+
+        .login-btn { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; }
+
+        /* Dashboard Styles */
+        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .stat-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; display: block; }
+        .chart-container { height: 200px; }
+
+        /* Controls */
+        .btn-attack { background: var(--danger); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
+        .btn-mitigate { background: var(--success); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
+
+        .log-box {
+            background: #000; color: #00ff41; padding: 15px; height: 120px;
+            overflow-y: auto; border-radius: 8px; font-family: monospace; font-size: 0.85rem;
+        }
+
+        .typing { border-color: var(--danger) !important; background-color: #fff5f5; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>⚔️ CyberScope</h1>
+    <a href="/hub" class="nav-back">← Back to Hub</a>
+</div>
+
+<div class="container">
+    <header>
+        <h1>Cyber Attack Scenario Visualizer</h1>
+        <p>Analyzing Brute-Force Patterns & Mitigation Strategies</p>
+    </header>
+
+    <div class="website-mockup">
+        <h2 style="color:#1e293b">Bank Secure Login</h2>
+        <div id="lock-overlay" style="display:none; color: red; font-weight: bold; margin-bottom: 10px;">⚠️ ACCOUNT LOCKED</div>
+        <input type="text" id="web-user" value="admin_user" readonly>
+        <input type="text" id="web-pass" placeholder="Password">
+        <button class="login-btn">Sign In</button>
+        <p id="web-message" style="margin-top: 10px; color: #dc2626; font-weight: bold;"></p>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <button class="btn-attack" id="attackBtn" onclick="runScenario()">🚀 START ATTACK</button>
+            <button class="btn-mitigate" onclick="mitigate()">🛡️ ACTIVATE FIREWALL</button>
+            
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <span style="color: #94a3b8; font-size: 0.8rem;">ATTEMPTS</span>
+                    <span id="count" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span style="color: #94a3b8; font-size: 0.8rem;">STATUS</span>
+                    <span id="risk" class="stat-value" style="color: var(--success)">READY</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card chart-container">
+            <canvas id="attackChart"></canvas>
+        </div>
+
+        <div id="logs" class="log-box">[SYSTEM] Ready to start attack simulation. Click START ATTACK.</div>
+    </div>
+</div>
+
+<script>
+    const dictionary = ["123456", "password", "admin123", "qwerty", "secret", "welcome", "admin", "1234", "login", "pass"];
+    let isMitigated = false;
+    let isRunning = false;
+
+    const ctx = document.getElementById('attackChart').getContext('2d');
+    let attackChart = new Chart(ctx, {
+        type: 'line',
+        data: { 
+            labels: [], 
+            datasets: [{ 
+                label: 'Attack Progress', 
+                data: [], 
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                fill: true,
+                tension: 0.4 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { y: { beginAtZero: true, max: 10 } } 
+        }
+    });
+
+    function addLog(msg, color = "#00ff41") {
+        const time = new Date().toLocaleTimeString();
+        document.getElementById('logs').innerHTML += `<div style="color:${color}">[${time}] ${msg}</div>`;
+        document.getElementById('logs').scrollTop = document.getElementById('logs').scrollHeight;
+    }
+
+    function mitigate() {
+        if (!isRunning) return;
+        isMitigated = true;
+        addLog("🛡️ Firewall activated! Blocking attacker IP...", "#22c55e");
+        document.getElementById('risk').innerText = "PROTECTED";
+        document.getElementById('risk').style.color = "#22c55e";
+        document.getElementById('lock-overlay').style.display = "block";
+    }
+
+    async function runScenario() {
+        if (isRunning) return;
+        isRunning = true;
+        isMitigated = false;
+        
+        document.getElementById('count').innerText = "0";
+        document.getElementById('risk').innerText = "ATTACKING";
+        document.getElementById('risk').style.color = "#ef4444";
+        document.getElementById('lock-overlay').style.display = "none";
+        document.getElementById('web-message').innerText = "";
+        document.getElementById('logs').innerHTML = '';
+        attackChart.data.labels = [];
+        attackChart.data.datasets[0].data = [];
+
+        addLog("🚀 Starting brute force attack...");
+
+        try {
+            const response = await fetch('/api/bruteforce', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dictionary })
+            });
+
+            const data = await response.json();
+            
+            for (let i = 0; i < data.attempts.length; i++) {
+                if (isMitigated) break;
+
+                const attempt = data.attempts[i];
+                document.getElementById('web-pass').value = attempt.password;
+                document.getElementById('web-pass').classList.add('typing');
+                
+                await new Promise(r => setTimeout(r, 500));
+
+                document.getElementById('count').innerText = attempt.attempt;
+                
+                attackChart.data.labels.push(`#${attempt.attempt}`);
+                attackChart.data.datasets[0].data.push(Math.min(10, attempt.attempt));
+                attackChart.update();
+
+                if (attempt.success) {
+                    document.getElementById('web-message').innerText = "✓ LOGIN SUCCESSFUL!";
+                    document.getElementById('web-message').style.color = "#22c55e";
+                    addLog(`⚠️ BREACH! Password cracked: "${attempt.password}"`, "#ef4444");
+                    document.getElementById('risk').innerText = "COMPROMISED";
+                    document.getElementById('risk').style.color = "#ef4444";
+                    break;
+                } else {
+                    document.getElementById('web-message').innerText = "✗ Access Denied";
+                    addLog(`Attempt ${attempt.attempt}: "${attempt.password}" failed`);
+                }
+            }
+
+            if (!isMitigated && !data.attempts.some(a => a.success)) {
+                addLog("Attack exhausted dictionary. No password found.");
+                document.getElementById('risk').innerText = "FAILED";
+                document.getElementById('risk').style.color = "#94a3b8";
+            }
+
+        } catch (error) {
+            addLog(`Error: ${error.message}`, "#ef4444");
+        }
+        
+        isRunning = false;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ransomware Scenario Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --danger: #ef4444;
+            --text: #f8fafc;
+        }
+
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+
+        .navbar {
+            background: rgba(30, 41, 59, 0.95);
+            padding: 15px 30px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h1 {
+            color: #3b82f6;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .nav-back {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .nav-back:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .page-content { padding: 20px; }
+        .container { max-width: 1100px; margin: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+
+        /* The Victim's File System */
+        .file-system {
+            background: #ffffff; color: #333; border-radius: 12px; padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); min-height: 400px;
+        }
+
+        .file-item {
+            display: flex; align-items: center; padding: 10px;
+            border-bottom: 1px solid #eee; font-family: monospace;
+        }
+
+        .file-icon { font-size: 1.5rem; margin-right: 10px; }
+        .encrypted { color: var(--danger); font-weight: bold; }
+
+        /* Ransom Note Overlay */
+        #ransom-note {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #7f1d1d; color: white; z-index: 100; text-align: center;
+            padding-top: 100px; font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* Dashboard Styles */
+        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 5px solid var(--danger); }
+        .log-box { background: #000; color: #f87171; padding: 15px; height: 150px; overflow-y: auto; border-radius: 8px; font-family: monospace; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>⚔️ CyberScope</h1>
+    <a href="/hub" class="nav-back">← Back to Hub</a>
+</div>
+
+<div class="page-content" style="display:none;">
+    <h1 style="font-size: 4rem;">⚠ YOUR FILES ARE ENCRYPTED ⚠</h1>
+    <p style="font-size: 1.5rem;">To decrypt your data, send 2 lakhs to the following address:</p>
+    <code style="background: black; padding: 10px; font-size: 1.2rem;">dholakpur</code>
+    <br><br>
+</div>
+
+<div id="ransom-note" style="display: none;">
+    <h1 style="font-size: 4rem;">⚠ YOUR FILES ARE ENCRYPTED ⚠</h1>
+    <p style="font-size: 1.5rem;">To decrypt your data, send 2 lakhs to the following address:</p>
+    <code style="background: black; padding: 10px; font-size: 1.2rem;">dholakpur</code>
+    <br><br>
+    <button onclick="closeRansom()" style="padding:15px 30px; background:white; color:red; border:none; font-weight:bold; cursor:pointer;">CLOSE (SIMULATION ONLY)</button>
+</div>
+
+<div class="container">
+    <header style="grid-column: 1 / span 2; text-align: center;">
+        <h1>Scenario: Ransomware Infection</h1>
+        <p>Visualizing file system encryption and the impact on data availability.</p>
+    </header>
+
+    <div class="file-system">
+        <h3 style="margin-top:0">My Documents (C:/Users/Admin/Docs)</h3>
+        <div id="file-list">
+            <div class="file-item"><span class="file-icon">📄</span> <span class="fname">financial_report.pdf</span></div>
+            <div class="file-item"><span class="file-icon">📄</span> <span class="fname">passwords.txt</span></div>
+            <div class="file-item"><span class="file-icon">🖼</span> <span class="fname">family_photo.jpg</span></div>
+            <div class="file-item"><span class="file-icon">📄</span> <span class="fname">project_plan.docx</span></div>
+            <div class="file-item"><span class="file-icon">📊</span> <span class="fname">client_database.xlsx</span></div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h3>Attack Control</h3>
+            <button onclick="startRansomware()" style="width:100%; padding:15px; background:var(--danger); border:none; color:white; border-radius:8px; font-weight:bold; cursor:pointer;">
+                EXECUTE RANSOMWARE PAYLOAD
+            </button>
+            <p style="font-size: 0.8rem; margin-top: 10px; color: #94a3b8;">
+                This simulates the <strong>Exploitation</strong> and <strong>Actions on Objectives</strong> phases of the kill chain.
+            </p>
+        </div>
+
+        <div class="card" style="height: 200px;">
+            <canvas id="encryptChart"></canvas>
+        </div>
+
+        <div id="logs" class="log-box">[SYSTEM] File system integrity: 100%</div>
+    </div>
+</div>
+
+<script>
+    const logs = document.getElementById('logs');
+    const fileList = document.querySelectorAll('.file-item');
+    
+    // Chart.js - Tracking Encryption Progress
+    const ctx = document.getElementById('encryptChart').getContext('2d');
+    let encryptChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: ['0%', '20%', '40%', '60%', '80%', '100%'], datasets: [{ label: 'Encryption Progress', data: [0, 0, 0, 0, 0, 0], borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.2)', fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    function addLog(msg, color = "#f87171") {
+        logs.innerHTML += `<div style="color:${color}">[${new Date().toLocaleTimeString().split(' ')[0]}] ${msg}</div>`;
+        logs.scrollTop = logs.scrollHeight;
+    }
+
+    async function startRansomware() {
+        addLog("MALWARE: Encrypting local drives...", "white");
+        
+        for (let i = 0; i < fileList.length; i++) {
+            await new Promise(r => setTimeout(r, 800));
+            
+            // Visual file change
+            const nameSpan = fileList[i].querySelector('.fname');
+            const originalName = nameSpan.innerText;
+            nameSpan.innerText = btoa(originalName).substring(0, 10) + ".locked";
+            nameSpan.classList.add('encrypted');
+            
+            // Update Log
+            addLog(`ENCRYPTED: ${originalName} -> [AES-256]`);
+            
+            // Update Chart
+            encryptChart.data.datasets[0].data[i+1] = (i + 1) * 20;
+            encryptChart.update();
+        }
+
+        await new Promise(r => setTimeout(r, 1000));
+        // update stats via API
+        try {
+            const resp = await fetch('/api/ransomware', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ num_files: fileList.length })
+            });
+            const data = await resp.json();
+            addLog(`API: Encrypted ${data.files_encrypted} files, ransom $${data.ransom_amount}`, "#ef4444");
+        } catch(e) {
+            console.error('Ransomware API error', e);
+        }
+        document.getElementById('ransom-note').style.display = "block";
+        // show the main ransom message once files are encrypted
+        document.querySelector('.page-content').style.display = "block";
+        addLog("CRITICAL: Ransomware deployment complete.", "yellow");
+    }
+
+    function closeRansom() {
+        document.getElementById('ransom-note').style.display = "none";
+        location.reload();
+    }
+</script>
+</body>
+</html>
